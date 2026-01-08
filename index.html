@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        input { width: 300px; padding: 8px; }
+        ul { list-style: none; padding: 0; }
+        li { cursor: pointer; padding: 5px; }
+        li:hover { background: #eee; }
+    </style>
+</head>
+<body>
+
+<h2>Real-Time Stock Analysis</h2>
+
+<input type="text" id="search" placeholder="Search company...">
+<ul id="suggestions"></ul>
+
+<canvas id="priceChart"></canvas>
+
+<p id="stats"></p>
+
+<script>
+let companies = [];
+
+fetch("/companies")
+.then(res => res.json())
+.then(data => companies = data);
+
+document.getElementById("search").addEventListener("input", function() {
+    let val = this.value.toLowerCase();
+    let list = document.getElementById("suggestions");
+    list.innerHTML = "";
+
+    companies.filter(c => c.toLowerCase().includes(val))
+    .forEach(c => {
+        let li = document.createElement("li");
+        li.innerText = c;
+        li.onclick = () => loadStock(c);
+        list.appendChild(li);
+    });
+});
+
+function loadStock(company) {
+    fetch(`/stock/${company}`)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("suggestions").innerHTML = "";
+
+        document.getElementById("stats").innerHTML = `
+            <b>Max Price:</b> ${data.max_price}<br>
+            <b>Min Price:</b> ${data.min_price}<br>
+            <b>Avg Close:</b> ${data.avg_close.toFixed(2)}
+        `;
+
+        new Chart(document.getElementById("priceChart"), {
+            type: "line",
+            data: {
+                labels: data.dates,
+                datasets: [{
+                    label: company + " Close Price",
+                    data: data.close,
+                    borderWidth: 2
+                }]
+            }
+        });
+    });
+}
+</script>
+
+</body>
+</html>
