@@ -15,7 +15,7 @@ collection = db["RELIANCE_BSE"]
 data = list(collection.find())
 
 if len(data) == 0:
-    raise Exception("❌ No data found in MongoDB collection")
+    raise Exception("No data found in MongoDB collection")
 
 # -------------------------
 # 2. Convert to DataFrame
@@ -29,7 +29,7 @@ df = df.sort_values("date")
 features = ["open", "high", "low", "close", "volume"]
 df = df[features]
 
-print("✅ Data Loaded:", df.shape)
+print("Data Loaded:", df.shape)
 
 # -------------------------
 # 3. Scaling
@@ -57,8 +57,8 @@ split = int(0.8 * len(X))
 X_train, X_test = X[:split], X[split:]
 y_train, y_test = y[:split], y[split:]
 
-print("✅ Training Samples:", X_train.shape)
-print("✅ Testing Samples:", X_test.shape)
+print("Training Samples:", X_train.shape)
+print("Testing Samples:", X_test.shape)
 
 # -------------------------
 # 6. Build LSTM Model
@@ -96,10 +96,11 @@ dummy[0, 3] = predicted_scaled
 
 predicted_price = scaler.inverse_transform(dummy)[0, 3]
 
-print("\n📈 Predicted Next Day Close Price:", round(predicted_price, 2))
+print("\nPredicted Next Day Close Price:", round(predicted_price, 2))
 
 # -------------------------
 # 9. Save Model
 # -------------------------
 model.save("lstm_stock_model.h5")
-print("✅ Model saved as lstm_stock_model.h5")
+print("Model saved as lstm_stock_model.h5")
+
