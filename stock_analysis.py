@@ -10,8 +10,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 # -------------------------
 client = pymongo.MongoClient("mongodb://localhost:27017/")
 db = client["stock_market"]
-collection = db["RELIANCE_BSE"]
-
+collection = db["RELIANCE_BSE", "RELIANCE_NSE", "TCS_BSE", "TCS_NSE", "INFy_NSE"][0] 
 data = list(collection.find())
 
 if len(data) == 0:
@@ -82,25 +81,8 @@ model.fit(
     batch_size=32,
     validation_data=(X_test, y_test)
 )
-
 # -------------------------
-# 8. Predict Next Day Price
+# 8. Save Model
 # -------------------------
-last_60_days = scaled_data[-LOOK_BACK:]
-last_60_days = last_60_days.reshape(1, LOOK_BACK, 5)
-
-predicted_scaled = model.predict(last_60_days)
-
-dummy = np.zeros((1, 5))
-dummy[0, 3] = predicted_scaled
-
-predicted_price = scaler.inverse_transform(dummy)[0, 3]
-
-print("\nPredicted Next Day Close Price:", round(predicted_price, 2))
-
-# -------------------------
-# 9. Save Model
-# -------------------------
-model.save("lstm_stock_model.h5")
-print("Model saved as lstm_stock_model.h5")
-
+model.save("lstm_stock_model.keras")
+print("Model saved as lstm_stock_model.keras")
