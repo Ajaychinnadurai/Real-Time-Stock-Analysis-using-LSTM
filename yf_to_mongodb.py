@@ -1,7 +1,7 @@
 import yfinance as yf
 from pymongo import MongoClient, errors
-import pandas as pd
 
+# MongoDB connection
 client = MongoClient("mongodb://localhost:27017/")
 db = client["stock_market"]
 
@@ -16,22 +16,16 @@ def store_stock(symbol, exchange):
         return
 
     stock.columns = stock.columns.get_level_values(0)
-
     collection = db[f"{symbol}_{exchange}"]
 
-    collection.create_index(
-        [("symbol", 1), ("date", 1)],
-        unique=True
-    )
+    collection.create_index([("date", 1)], unique=True)
 
     data = []
-
     for row in stock.itertuples():
-        date = row[0]
         data.append({
             "symbol": yf_symbol,
             "exchange": exchange,
-            "date": date.to_pydatetime(),
+            "date": row[0].to_pydatetime(),
             "open": float(row[1]),
             "high": float(row[2]),
             "low": float(row[3]),
@@ -41,16 +35,16 @@ def store_stock(symbol, exchange):
 
     try:
         collection.insert_many(data, ordered=False)
-        print(f"Inserted data for {symbol} ({exchange})")
-    except errors.BulkWriteError as e:
+        print(f"Inserted {symbol} ({exchange})")
+    except errors.BulkWriteError:
         print(f"Duplicates skipped for {symbol} ({exchange})")
 
-# Test
+# Example usage
 nse_list = ["RELIANCE", "TCS", "INFY"]
 bse_list = ["RELIANCE", "TCS"]
 
-for sym in nse_list:
-    store_stock(sym, "NSE")
+for s in nse_list:
+    store_stock(s, "NSE")
 
-for sym in bse_list:
-    store_stock(sym, "BSE")
+for s in bse_list:
+    store_stock(s, "BSE")
