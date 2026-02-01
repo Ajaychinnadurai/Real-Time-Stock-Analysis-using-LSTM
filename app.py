@@ -1,7 +1,9 @@
 from flask import Flask, render_template, jsonify
 import pymongo
 import pandas as pd
-
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+import tensorflow.keras as tf
 app = Flask(__name__)
 
 # MongoDB
@@ -18,7 +20,7 @@ def companies():
     names = db.list_collection_names()
     return jsonify(names)
 
-# 📊 Stock analysis
+# Stock analysis
 @app.route("/stock/<company>")
 def stock_data(company):
     collection = db[company]
@@ -42,5 +44,40 @@ def stock_data(company):
 
     return jsonify(analysis)
 
+def model_predict(company):
+    model = tf.models.load_model(r"D:\Real Time Stock Analysis using LSTM\lstm_stock_model.keras", custom_objects=None, compile=True)
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    LOOK_BACK = 60
+    features = ["open", "high", "low", "close", "volume"]
+    collection = db[company]
+    data = list(collection.find().sort("date", 1))
+
+    if len(data) < LOOK_BACK:
+        return None
+
+    df = pd.DataFrame(data)
+    df = df[features]
+    scaled_data = scaler.fit_transform(df)
+
+    last_60_days = scaled_data[-LOOK_BACK:]
+    last_60_days = last_60_days.reshape(1, LOOK_BACK, 5)
+
+    predicted_scaled = model.predict(last_60_days)
+
+    dummy = np.zeros((1, 5))
+    dummy[0, 3] = predicted_scaled
+
+    predicted_price = scaler.inverse_transform(dummy)[0, 3]
+    return round(predicted_price, 2)
+
+@app.route("/predict/<company>")
+def predict(company):
+    price = model_predict(company)
+    if price is None:
+        return jsonify({"error": "Not enough data"})
+    return jsonify({"tomorrow_price": price})
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
+
+    from flask import Flask, render_template, jsonify
